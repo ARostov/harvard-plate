@@ -1,0 +1,45 @@
+{
+  "meal_plans": [
+    {
+      "id": "mediterranean",
+      "name": "Средиземноморская тарелка",
+      "description": "Классический вариант с оливковым маслом и овощами",
+      "items": [
+        {"foodId": "tomato", "amount": 100},
+        {"foodId": "cucumber", "amount": 100},
+        {"foodId": "olive_oil", "amount": 15},
+        {"foodId": "salmon", "amount": 120},
+        {"foodId": "quinoa", "amount": 100}
+      ],
+      "calories": 520,
+      "tags": ["здоровое сердце", "омега-3"]
+    },
+    {
+      "id": "vegetarian",
+      "name": "Вегетарианская тарелка",
+      "description": "Полноценный растительный обед",
+      "items": [
+        {"foodId": "broccoli", "amount": 150},
+        {"foodId": "bell_pepper", "amount": 100},
+        {"foodId": "lentils", "amount": 120},
+        {"foodId": "quinoa", "amount": 100},
+        {"foodId": "avocado", "amount": 50}
+      ],
+      "calories": 480,
+      "tags": ["растительный", "высокобелковый"]
+    },
+    {
+      "id": "athlete",
+      "name": "Спортивная тарелка",
+      "description": "Для восстановления после тренировки",
+      "items": [
+        {"foodId": "sweet_potato", "amount": 150},
+        {"foodId": "chicken_breast", "amount": 150},
+        {"foodId": "broccoli", "amount": 100},
+        {"foodId": "avocado", "amount": 50}
+      ],
+      "calories": 580,
+      "tags": ["восстановление", "высокий белок"]
+    }
+  ]
+}
