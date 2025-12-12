@@ -11,7 +11,9 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "prepare": "husky install",
-    "test": "echo 'Тесты пока не настроены' && exit 0"
+    "test": "vitest",
+    "test:ui": "vitest --ui",
+    "test:coverage": "vitest --coverage"
   },
   "dependencies": {
     "vue": "^3.3.0",
@@ -24,7 +26,13 @@
     "eslint-plugin-vue": "^9.17.0",
     "prettier": "^3.0.0",
     "husky": "^8.0.0",
-    "lint-staged": "^13.2.0"
+    "lint-staged": "^13.2.0",
+    "vitest": "^1.0.0",
+    "@vue/test-utils": "^2.4.0",
+    "jsdom": "^22.0.0",
+    "@testing-library/vue": "^7.0.0",
+    "@testing-library/user-event": "^14.0.0",
+    "happy-dom": "^9.0.0"
   },
   "keywords": ["nutrition", "health", "food", "harvard-plate"],
   "author": "Ваше имя",
