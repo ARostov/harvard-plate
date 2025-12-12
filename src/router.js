@@ -1,7 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 
 // Импортируем компоненты
-const Plate = () => import('./components/Plate/Plate.vue')
+const PlatePage = () => import('./views/PlatePage.vue')
 const FoodSelector = () => import('./components/FoodSelector.vue')
 const NutritionInfo = () => import('./components/NutritionInfo.vue')
 const CompatibilityInfo = () => import('./components/CompatibilityInfo.vue')
@@ -10,7 +10,7 @@ const routes = [
     {
         path: '/',
         name: 'home',
-        component: Plate,
+        component: PlatePage,
         meta: { title: 'Конструктор тарелки' }
     },
     {

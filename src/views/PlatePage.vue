@@ -6,44 +6,110 @@
       <p class="subtitle">Соберите идеальную тарелку по принципам Гарвардского питания</p>
     </div>
 
-    <Plate />
+    <div class="debug-controls" v-if="true"> <!-- Поставь v-if="true" для тестирования -->
+      <button @click="loadTestData" class="btn btn-sm">
+        <i class="fas fa-vial"></i> Загрузить тестовые данные
+      </button>
+    </div>
 
-    <!-- Анализ тарелки (пока оставляем как было, потом тоже вынесем в компонент) -->
-    <div class="plate-analysis card">
-      <h3><i class="fas fa-chart-line"></i> Анализ вашей тарелки</h3>
+    <div class="plate-container">
+      <!-- Основной компонент тарелки -->
+      <Plate
+          ref="plateComponent"
+          @update-nutrition="handleNutritionUpdate"
+          @update-totals="handleTotalsUpdate"
+      />
 
-      <div class="analysis-section">
-        <h4>Баланс по Гарвардской тарелке</h4>
-        <div class="balance-indicators">
-          <div class="balance-item good">
-            <div class="balance-label">Овощи и фрукты</div>
-            <div class="balance-bar">
-              <div class="balance-fill" :style="{ width: '50%' }"></div>
-            </div>
-            <div class="balance-value">Цель: 50%</div>
-          </div>
-          <div class="balance-item good">
-            <div class="balance-label">Белки</div>
-            <div class="balance-bar">
-              <div class="balance-fill" :style="{ width: '25%' }"></div>
-            </div>
-            <div class="balance-value">Цель: 25%</div>
-          </div>
-          <div class="balance-item good">
-            <div class="balance-label">Углеводы</div>
-            <div class="balance-bar">
-              <div class="balance-fill" :style="{ width: '25%' }"></div>
-            </div>
-            <div class="balance-value">Цель: 25%</div>
-          </div>
-        </div>
-      </div>
+      <!-- Статистика тарелки (показываем когда есть данные) -->
+      <PlateStats
+          v-if="showStats"
+          :nutrition="nutrition"
+          :total-weight="totalWeight"
+          :total-items="totalItems"
+      />
+
+      <!-- Анализ баланса -->
+      <PlateAnalysis
+          v-if="showStats"
+          :vegetable-percentage="vegetablePercentage"
+          :protein-percentage="proteinPercentage"
+          :carb-percentage="carbPercentage"
+      />
     </div>
   </div>
 </template>
 
 <script setup>
+import { ref, reactive, computed } from 'vue'
 import Plate from '../components/Plate/Plate.vue'
+import PlateStats from '../components/Plate/PlateStats.vue'
+import PlateAnalysis from '../components/Plate/PlateAnalysis.vue'
+
+const plateComponent = ref(null)
+
+// Данные о питательности
+const nutrition = reactive({
+  calories: 0,
+  protein: 0,
+  carbs: 0,
+  fats: 0,
+  fiber: 0,
+  sugar: 0
+})
+
+// Общие данные
+const totalWeight = ref(0)
+const totalItems = ref(0)
+
+// Проценты для анализа
+const vegetablePercentage = ref(0)
+const proteinPercentage = ref(0)
+const carbPercentage = ref(0)
+
+// Показывать ли статистику
+const showStats = computed(() => totalItems.value > 0)
+
+// Обработчики обновления данных из Plate компонента
+const handleNutritionUpdate = (newNutrition) => {
+  Object.assign(nutrition, newNutrition)
+}
+
+const handleTotalsUpdate = ({ weight, items, percentages }) => {
+  totalWeight.value = weight
+  totalItems.value = items
+  vegetablePercentage.value = percentages.vegetable
+  proteinPercentage.value = percentages.protein
+  carbPercentage.value = percentages.carb
+}
+
+const loadTestData = () => {
+  nutrition.calories = 450
+  nutrition.protein = 35
+  nutrition.carbs = 55
+  nutrition.fats = 15
+  nutrition.fiber = 12
+  nutrition.sugar = 8
+  totalWeight.value = 400
+  totalItems.value = 4
+  vegetablePercentage.value = 40
+  proteinPercentage.value = 30
+  carbPercentage.value = 30
+
+  console.log('Тестовые данные загружены:', nutrition)
+}
+
+// Примерные данные для демонстрации (можно удалить после тестирования)
+// nutrition.calories = 450
+// nutrition.protein = 35
+// nutrition.carbs = 55
+// nutrition.fats = 15
+// nutrition.fiber = 12
+// nutrition.sugar = 8
+// totalWeight.value = 400
+// totalItems.value = 4
+// vegetablePercentage.value = 40
+// proteinPercentage.value = 30
+// carbPercentage.value = 30
 </script>
 
 <style scoped>
@@ -66,49 +132,46 @@ import Plate from '../components/Plate/Plate.vue'
   font-size: 1.1rem;
 }
 
-.plate-analysis {
-  margin-top: var(--spacing-xl);
-  padding: var(--spacing-lg);
-}
-
-.analysis-section {
-  margin-bottom: var(--spacing-lg);
-}
-
-.balance-indicators {
+.plate-container {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-md);
+  gap: var(--spacing-lg);
 }
 
-.balance-item {
-  padding: var(--spacing-md);
-  border-radius: var(--radius-md);
-  background: var(--bg-secondary);
-  border-left: 4px solid var(--success-color);
+@media (min-width: 1200px) {
+  .plate-container {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    grid-template-areas:
+      "plate stats"
+      "plate analysis";
+    grid-template-rows: auto 1fr;
+    gap: var(--spacing-lg);
+  }
+
+  .plate-container > :first-child {
+    grid-area: plate;
+    height: fit-content;
+  }
+  .plate-container > :nth-child(2) {
+    grid-area: stats;
+  }
+  .plate-container > :nth-child(3) {
+    grid-area: analysis;
+  }
 }
 
-.balance-label {
-  font-weight: 500;
-  margin-bottom: var(--spacing-xs);
-}
+@media (min-width: 768px) and (max-width: 1199px) {
+  .plate-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-areas:
+      "plate plate"
+      "stats analysis";
+  }
 
-.balance-bar {
-  height: 10px;
-  background: var(--border-color);
-  border-radius: 5px;
-  margin: var(--spacing-sm) 0;
-  overflow: hidden;
-}
-
-.balance-fill {
-  height: 100%;
-  background: var(--primary-color);
-  transition: width 0.5s ease;
-}
-
-.balance-value {
-  font-size: 0.9rem;
-  color: var(--text-secondary);
+  .plate-container > :first-child { grid-area: plate; }
+  .plate-container > :nth-child(2) { grid-area: stats; }
+  .plate-container > :nth-child(3) { grid-area: analysis; }
 }
 </style>

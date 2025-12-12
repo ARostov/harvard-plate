@@ -1,106 +1,132 @@
 // Функции для расчета питательности и баланса тарелки
 
-/**
- * Рассчитывает суммарную питательность тарелки
- * @param {Array} plateItems - элементы тарелки [{foodId, amount}, ...]
- * @param {Object} foodsData - база продуктов
- * @returns {Object} - суммарные нутриенты
- */
+// utils/calculations.js
+
+// Расчет питательности тарелки
 export function calculatePlateNutrition(plateItems, foodsData) {
-    const totals = {
-        calories: 0,
-        protein: 0,
-        carbs: 0,
-        fat: 0,
-        fiber: 0
+    if (!plateItems || !plateItems.length) {
+        return {
+            calories: 0,
+            protein: 0,
+            carbs: 0,
+            fats: 0,
+            fiber: 0,
+            sugar: 0
+        }
     }
+
+    let calories = 0
+    let protein = 0
+    let carbs = 0
+    let fats = 0
+    let fiber = 0
+    let sugar = 0
 
     plateItems.forEach(item => {
         const food = foodsData.foods.find(f => f.id === item.foodId)
-        if (food) {
-            const multiplier = item.amount / 100 // питательность на 100г
-            totals.calories += food.nutrition.calories * multiplier
-            totals.protein += food.nutrition.protein * multiplier
-            totals.carbs += food.nutrition.carbs * multiplier
-            totals.fat += food.nutrition.fat * multiplier
-            totals.fiber += food.nutrition.fiber * multiplier
+        if (food && food.nutrition) {
+            // Расчет на основе веса (в 100г продукта)
+            const multiplier = item.amount / 100
+
+            calories += (food.nutrition.calories || 0) * multiplier
+            protein += (food.nutrition.protein || 0) * multiplier
+            carbs += (food.nutrition.carbs || 0) * multiplier
+            fats += (food.nutrition.fats || 0) * multiplier
+            fiber += (food.nutrition.fiber || 0) * multiplier
+            sugar += (food.nutrition.sugar || 0) * multiplier
         }
     })
 
-    // Округляем значения
-    Object.keys(totals).forEach(key => {
-        totals[key] = Math.round(totals[key] * 10) / 10
-    })
-
-    return totals
+    return {
+        calories: Math.round(calories),
+        protein: Math.round(protein * 10) / 10,
+        carbs: Math.round(carbs * 10) / 10,
+        fats: Math.round(fats * 10) / 10,
+        fiber: Math.round(fiber * 10) / 10,
+        sugar: Math.round(sugar * 10) / 10
+    }
 }
 
-/**
- * Рассчитывает баланс тарелки по категориям (Гарвардская тарелка)
- * @param {Array} plateItems - элементы тарелки
- * @param {Object} foodsData - база продуктов
- * @returns {Object} - проценты по категориям
- */
+// Расчет баланса тарелки (проценты по категориям)
 export function calculatePlateBalance(plateItems, foodsData) {
-    const categories = {
-        vegetable: 0,
-        protein: 0,
-        carb: 0,
-        other: 0
+    if (!plateItems || !plateItems.length) {
+        return {
+            vegetable: 0,
+            protein: 0,
+            carb: 0
+        }
     }
 
-    let totalAmount = 0
+    // Считаем вес по категориям
+    let vegetableWeight = 0
+    let proteinWeight = 0
+    let carbWeight = 0
 
     plateItems.forEach(item => {
         const food = foodsData.foods.find(f => f.id === item.foodId)
         if (food) {
-            const category = food.category
-            if (categories[category] !== undefined) {
-                categories[category] += item.amount
-            } else {
-                categories.other += item.amount
+            switch (food.category) {
+                case 'vegetable':
+                    vegetableWeight += item.amount
+                    break
+                case 'protein':
+                    proteinWeight += item.amount
+                    break
+                case 'carb':
+                    carbWeight += item.amount
+                    break
             }
-            totalAmount += item.amount
         }
     })
 
-    // Преобразуем в проценты
-    const percentages = {}
-    Object.keys(categories).forEach(category => {
-        percentages[category] = totalAmount > 0
-            ? Math.round((categories[category] / totalAmount) * 100)
-            : 0
-    })
+    const totalWeight = vegetableWeight + proteinWeight + carbWeight
 
-    return percentages
-}
-
-/**
- * Проверяет соответствует ли тарелка идеалу Гарвардской тарелки
- * @param {Object} balance - баланс тарелки в процентах
- * @returns {Object} - оценка по каждой категории
- */
-export function evaluateHarvardPlate(balance) {
-    const ideal = {
-        vegetable: 50,
-        protein: 25,
-        carb: 25
+    if (totalWeight === 0) {
+        return {
+            vegetable: 0,
+            protein: 0,
+            carb: 0
+        }
     }
 
-    const evaluation = {}
+    return {
+        vegetable: Math.round((vegetableWeight / totalWeight) * 100),
+        protein: Math.round((proteinWeight / totalWeight) * 100),
+        carb: Math.round((carbWeight / totalWeight) * 100)
+    }
+}
 
-    Object.keys(ideal).forEach(category => {
-        const diff = Math.abs(balance[category] - ideal[category])
-        if (diff <= 10) {
-            evaluation[category] = { status: 'good', diff }
-        } else if (diff <= 20) {
-            evaluation[category] = { status: 'warning', diff }
-        } else {
-            evaluation[category] = { status: 'bad', diff }
+// Оценка Гарвардской тарелки
+export function evaluateHarvardPlate(balance) {
+    const ideal = { vegetable: 50, protein: 25, carb: 25 }
+
+    return {
+        vegetable: {
+            actual: balance.vegetable,
+            ideal: ideal.vegetable,
+            diff: Math.abs(balance.vegetable - ideal.vegetable),
+            status: getStatus(balance.vegetable, ideal.vegetable)
+        },
+        protein: {
+            actual: balance.protein,
+            ideal: ideal.protein,
+            diff: Math.abs(balance.protein - ideal.protein),
+            status: getStatus(balance.protein, ideal.protein)
+        },
+        carb: {
+            actual: balance.carb,
+            ideal: ideal.carb,
+            diff: Math.abs(balance.carb - ideal.carb),
+            status: getStatus(balance.carb, ideal.carb)
         }
-    })
+    }
+}
 
-    return evaluation
+function getStatus(actual, ideal) {
+    const diff = Math.abs(actual - ideal)
+    if (diff <= 10) return 'good'
+    if (diff <= 20) return 'warning'
+    return 'bad'
 }
 
 /**

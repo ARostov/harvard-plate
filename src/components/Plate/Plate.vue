@@ -21,19 +21,19 @@
         :selected-category="selectedCategory"
         @add-to-plate="handleAddToPlate"
         @category-change="selectCategory"
+        @add-multiple="handleAddMultiple"
     />
   </div>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import PlateVisualization from './PlateVisualization.vue'
 import FoodSelection from './FoodSelection.vue'
 import foodsData from '../../data/foods.json'
-import { calculatePlateBalance } from '@/utils/calculations.js'
+import { calculatePlateNutrition, calculatePlateBalance } from '../../utils/calculations'
 
-console.log('Foods data loaded:', foodsData)
-console.log('Foods array:', foodsData?.foods)
+const emit = defineEmits(['update-nutrition', 'update-totals'])
 
 // Состояние
 const plateItems = ref([
@@ -57,11 +57,27 @@ const carbItems = computed(() =>
     plateItems.value.filter(item => getFoodCategory(item.foodId) === 'carb')
 )
 
-const balance = computed(() => calculatePlateBalance(plateItems.value, foodsData))
+// Питательность
+const nutrition = computed(() =>
+    calculatePlateNutrition(plateItems.value, foodsData)
+)
+
+// Баланс
+const balance = computed(() =>
+    calculatePlateBalance(plateItems.value, foodsData)
+)
 
 const vegetablePercentage = computed(() => balance.value.vegetable || 0)
 const proteinPercentage = computed(() => balance.value.protein || 0)
 const carbPercentage = computed(() => balance.value.carb || 0)
+
+// Общие данные
+const totalWeight = computed(() => {
+  const allItems = [...vegetableItems.value, ...proteinItems.value, ...carbItems.value]
+  return allItems.reduce((sum, item) => sum + item.amount, 0)
+})
+
+const totalItems = computed(() => plateItems.value.length)
 
 // Методы
 const getFoodCategory = (foodId) => {
@@ -81,7 +97,6 @@ const getFoodIcon = (foodId) => {
 
 // Обработчик добавления в тарелку
 const handleAddToPlate = ({ food, amount }) => {
-  // Добавляем проверку
   if (!food || !food.id) {
     console.error('Invalid food object received:', food)
     return
@@ -91,6 +106,17 @@ const handleAddToPlate = ({ food, amount }) => {
     id: Date.now(),
     foodId: food.id,
     amount: amount
+  })
+}
+
+// Обработчик добавления нескольких продуктов
+const handleAddMultiple = (foods) => {
+  foods.forEach(({ food, amount }) => {
+    plateItems.value.push({
+      id: Date.now() + Math.random(),
+      foodId: food.id,
+      amount: amount
+    })
   })
 }
 
@@ -111,6 +137,30 @@ const updateAmount = ({ item, amount }) => {
 const selectCategory = (category) => {
   selectedCategory.value = category
 }
+
+// Отслеживаем изменения и отправляем данные в родительский компонент
+watch([nutrition, totalWeight, totalItems, vegetablePercentage, proteinPercentage, carbPercentage], () => {
+  // Отправляем данные о питательности
+  emit('update-nutrition', {
+    calories: nutrition.value.calories || 0,
+    protein: nutrition.value.protein || 0,
+    carbs: nutrition.value.carbs || 0,
+    fats: nutrition.value.fats || 0,
+    fiber: nutrition.value.fiber || 0,
+    sugar: nutrition.value.sugar || 0
+  })
+
+  // Отправляем общие данные
+  emit('update-totals', {
+    weight: totalWeight.value,
+    items: totalItems.value,
+    percentages: {
+      vegetable: vegetablePercentage.value,
+      protein: proteinPercentage.value,
+      carb: carbPercentage.value
+    }
+  })
+}, { immediate: true, deep: true })
 </script>
 
 <style scoped>
