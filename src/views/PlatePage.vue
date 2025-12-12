@@ -6,35 +6,68 @@
       <p class="subtitle">Соберите идеальную тарелку по принципам Гарвардского питания</p>
     </div>
 
-    <div class="debug-controls" v-if="true"> <!-- Поставь v-if="true" для тестирования -->
-      <button @click="loadTestData" class="btn btn-sm">
-        <i class="fas fa-vial"></i> Загрузить тестовые данные
-      </button>
-    </div>
+    <div class="layout-container">
+      <!-- Левая колонка: Конструктор -->
+      <div class="left-column">
+        <Accordion title="🍽️ Ваша тарелка" :is-open="true">
+          <Plate
+              ref="plateComponent"
+              @update-nutrition="handleNutritionUpdate"
+              @update-totals="handleTotalsUpdate"
+          />
+        </Accordion>
+      </div>
 
-    <div class="plate-container">
-      <!-- Основной компонент тарелки -->
-      <Plate
-          ref="plateComponent"
-          @update-nutrition="handleNutritionUpdate"
-          @update-totals="handleTotalsUpdate"
-      />
+      <!-- Правая колонка: Аналитика -->
+      <div class="right-column">
+        <!-- Табы для аналитики -->
+        <Tabs :tabs="analyticsTabs" default-tab="stats">
+          <template #stats>
+            <PlateStats
+                :nutrition="nutrition"
+                :total-weight="totalWeight"
+                :total-items="totalItems"
+            />
+          </template>
 
-      <!-- Статистика тарелки (показываем когда есть данные) -->
-      <PlateStats
-          v-if="showStats"
-          :nutrition="nutrition"
-          :total-weight="totalWeight"
-          :total-items="totalItems"
-      />
+          <template #analysis>
+            <PlateAnalysis
+                :vegetable-percentage="vegetablePercentage"
+                :protein-percentage="proteinPercentage"
+                :carb-percentage="carbPercentage"
+            />
+          </template>
 
-      <!-- Анализ баланса -->
-      <PlateAnalysis
-          v-if="showStats"
-          :vegetable-percentage="vegetablePercentage"
-          :protein-percentage="proteinPercentage"
-          :carb-percentage="carbPercentage"
-      />
+          <template #recommendations>
+            <div class="recommendations-panel">
+              <h4><i class="fas fa-lightbulb"></i> Рекомендации</h4>
+              <RecommendationsList
+                  :nutrition="nutrition"
+                  :percentages="{
+                  vegetable: vegetablePercentage,
+                  protein: proteinPercentage,
+                  carb: carbPercentage
+                }"
+              />
+            </div>
+          </template>
+        </Tabs>
+
+        <!-- Быстрые действия -->
+        <Accordion title="⚡ Быстрые действия" :is-open="false">
+          <div class="quick-actions">
+            <button class="btn btn-outline" @click="savePlate">
+              <i class="fas fa-save"></i> Сохранить тарелку
+            </button>
+            <button class="btn btn-outline" @click="clearPlate">
+              <i class="fas fa-trash"></i> Очистить тарелку
+            </button>
+            <button class="btn btn-outline" @click="sharePlate">
+              <i class="fas fa-share"></i> Поделиться
+            </button>
+          </div>
+        </Accordion>
+      </div>
     </div>
   </div>
 </template>
@@ -44,6 +77,9 @@ import { ref, reactive, computed } from 'vue'
 import Plate from '../components/Plate/Plate.vue'
 import PlateStats from '../components/Plate/PlateStats.vue'
 import PlateAnalysis from '../components/Plate/PlateAnalysis.vue'
+import RecommendationsList from '../components/Plate/RecommendationsList.vue'
+import Accordion from '../components/UI/Accordion.vue'
+import Tabs from '../components/UI/Tabs.vue'
 
 const plateComponent = ref(null)
 
@@ -66,10 +102,27 @@ const vegetablePercentage = ref(0)
 const proteinPercentage = ref(0)
 const carbPercentage = ref(0)
 
-// Показывать ли статистику
-const showStats = computed(() => totalItems.value > 0)
+// Табы для аналитики
+const analyticsTabs = computed(() => [
+  {
+    id: 'stats',
+    title: 'Статистика',
+    icon: 'fas fa-chart-bar',
+    badge: totalItems.value > 0 ? totalItems.value : null
+  },
+  {
+    id: 'analysis',
+    title: 'Анализ',
+    icon: 'fas fa-chart-line'
+  },
+  {
+    id: 'recommendations',
+    title: 'Советы',
+    icon: 'fas fa-lightbulb'
+  }
+])
 
-// Обработчики обновления данных из Plate компонента
+// Обработчики обновления данных
 const handleNutritionUpdate = (newNutrition) => {
   Object.assign(nutrition, newNutrition)
 }
@@ -82,44 +135,38 @@ const handleTotalsUpdate = ({ weight, items, percentages }) => {
   carbPercentage.value = percentages.carb
 }
 
-const loadTestData = () => {
-  nutrition.calories = 450
-  nutrition.protein = 35
-  nutrition.carbs = 55
-  nutrition.fats = 15
-  nutrition.fiber = 12
-  nutrition.sugar = 8
-  totalWeight.value = 400
-  totalItems.value = 4
-  vegetablePercentage.value = 40
-  proteinPercentage.value = 30
-  carbPercentage.value = 30
-
-  console.log('Тестовые данные загружены:', nutrition)
+// Быстрые действия
+const savePlate = () => {
+  console.log('Сохранение тарелки...')
+  // Реализация сохранения
 }
 
-// Примерные данные для демонстрации (можно удалить после тестирования)
-// nutrition.calories = 450
-// nutrition.protein = 35
-// nutrition.carbs = 55
-// nutrition.fats = 15
-// nutrition.fiber = 12
-// nutrition.sugar = 8
-// totalWeight.value = 400
-// totalItems.value = 4
-// vegetablePercentage.value = 40
-// proteinPercentage.value = 30
-// carbPercentage.value = 30
+const clearPlate = () => {
+  if (confirm('Очистить тарелку?')) {
+    // Очистка через ref компонента
+    if (plateComponent.value?.clearPlate) {
+      plateComponent.value.clearPlate()
+    }
+  }
+}
+
+const sharePlate = () => {
+  console.log('Поделиться тарелкой...')
+  // Реализация шаринга
+}
 </script>
 
 <style scoped>
 .plate-page {
   padding: var(--spacing-lg) 0;
+  max-width: 1400px;
+  margin: 0 auto;
 }
 
 .page-header {
   text-align: center;
   margin-bottom: var(--spacing-xl);
+  padding: 0 var(--spacing-lg);
 }
 
 .page-header h2 {
@@ -132,46 +179,71 @@ const loadTestData = () => {
   font-size: 1.1rem;
 }
 
-.plate-container {
+.layout-container {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: var(--spacing-lg);
+  padding: 0 var(--spacing-lg);
+}
+
+.left-column,
+.right-column {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-lg);
+  gap: var(--spacing-md);
 }
 
-@media (min-width: 1200px) {
-  .plate-container {
-    display: grid;
-    grid-template-columns: 2fr 1fr;
-    grid-template-areas:
-      "plate stats"
-      "plate analysis";
-    grid-template-rows: auto 1fr;
-    gap: var(--spacing-lg);
-  }
+.recommendations-panel {
+  padding: var(--spacing-md);
+}
 
-  .plate-container > :first-child {
-    grid-area: plate;
-    height: fit-content;
-  }
-  .plate-container > :nth-child(2) {
-    grid-area: stats;
-  }
-  .plate-container > :nth-child(3) {
-    grid-area: analysis;
+.recommendations-panel h4 {
+  margin-top: 0;
+  margin-bottom: var(--spacing-md);
+  color: var(--primary-color);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.quick-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.quick-actions .btn {
+  width: 100%;
+  justify-content: flex-start;
+}
+
+/* Адаптивность */
+@media (max-width: 1200px) {
+  .layout-container {
+    grid-template-columns: 1.5fr 1fr;
   }
 }
 
-@media (min-width: 768px) and (max-width: 1199px) {
-  .plate-container {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    grid-template-areas:
-      "plate plate"
-      "stats analysis";
+@media (max-width: 992px) {
+  .layout-container {
+    grid-template-columns: 1fr;
+    gap: var(--spacing-md);
   }
 
-  .plate-container > :first-child { grid-area: plate; }
-  .plate-container > :nth-child(2) { grid-area: stats; }
-  .plate-container > :nth-child(3) { grid-area: analysis; }
+  .left-column,
+  .right-column {
+    gap: var(--spacing-sm);
+  }
+}
+
+@media (max-width: 768px) {
+  .plate-page {
+    padding: var(--spacing-md) 0;
+  }
+
+  .page-header,
+  .layout-container {
+    padding: 0 var(--spacing-md);
+  }
 }
 </style>
