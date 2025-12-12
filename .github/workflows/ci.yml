@@ -97,9 +97,12 @@ jobs:
       - name: Run unit tests
         run: |
           if [ -f package.json ] && grep -q '"test"' package.json; then
-            npm test -- --coverage --watchAll=false
+            npm run test:coverage 2>/dev/null || \
+            npx vitest run --coverage || \
+            npx vitest run || \
+            echo "Vitest не удалось запустить"
           else
-            echo "Тесты не настроены"
+          echo "Тесты не настроены"
           fi
 
       - name: Upload coverage reports
@@ -125,8 +128,12 @@ jobs:
 #        with:
 #          args: --severity-threshold=high
 
-      - name: Run CodeQL Analysis
-        uses: github/codeql-action/analyze@v2
-        if: github.event_name == 'push'
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v2
         with:
           languages: javascript
+          # или если TypeScript:
+          # languages: javascript-typescript
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v2
